@@ -1,5 +1,5 @@
-import { Button, Form, Grid, Header, Message } from "semantic-ui-react";
-import { useEffect, useState } from "react";
+import { Button, Form, Grid, Header, Message, Segment, SemanticCOLORS } from "semantic-ui-react";
+import { CSSProperties, useEffect, useState } from "react";
 
 import Exam from "../components/Exam";
 import { ExamQuestion } from "../types";
@@ -43,9 +43,15 @@ const Home: React.FC<HomeProps> = ({ examIds }) => {
         setLoading(false);
     };
 
-    const handleSubmit = (answers: ExamQuestion[]) => {
-        const incorrect = answers.filter((a) => a.answer !== a.correctAnswer);
+    const handleSubmit = () => {
+        if (!localQuestions) {
+            toast.error("No questions loaded!");
+            return;
+        }
+        const incorrect = localQuestions.filter((q) => q.answer !== q.correctAnswer);
         setIncorrectAnswers(incorrect);
+        setLocalQuestions(incorrect);
+        window.scrollTo(0, 0);
     };
 
     const handleReset = () => {
@@ -55,6 +61,15 @@ const Home: React.FC<HomeProps> = ({ examIds }) => {
         }
         setIncorrectAnswers(undefined);
         setLocalQuestions(questions.map((q) => ({ ...q, answer: undefined })));
+    };
+
+    const handleAnswerSelect = (index: number, answer: string) => {
+        setLocalQuestions((prevQuestions) => {
+            if (!prevQuestions) return prevQuestions;
+            const newQuestions = [...prevQuestions];
+            newQuestions[index].answer = answer;
+            return newQuestions;
+        });
     };
 
     return (
@@ -84,21 +99,49 @@ const Home: React.FC<HomeProps> = ({ examIds }) => {
                                 <Message.Header>{!incorrectAnswers.length ? "Perfect!" : "Almost there!"}</Message.Header>
                                 {!incorrectAnswers.length && "You got everything right! You're amazing!"}
                                 {!!incorrectAnswers.length &&
-                                    `You had ${incorrectAnswers.length} incorrect answers. Try just those again for practice!`}
-
-                                <br />
-
-                                <Button type="button" content="Start Over" onClick={handleReset} />
+                                    `You had ${incorrectAnswers.length} incorrect answer${
+                                        incorrectAnswers.length > 1 ? "s" : ""
+                                    }. Try just those again for practice!`}
                             </Message.Content>
                         </Message>
                     )}
 
                     {loading && <SimpleLoader />}
                     {!!localQuestions && (
-                        <>
-                            {incorrectAnswers && <Exam questions={incorrectAnswers} onSubmit={handleSubmit} onReset={handleReset} />}
-                            {!incorrectAnswers && <Exam questions={localQuestions} onSubmit={handleSubmit} onReset={handleReset} />}
-                        </>
+                        <Form onSubmit={() => handleSubmit()}>
+                            {localQuestions.map((q, i) => {
+                                const { id, question, options, answer } = q;
+                                let color: SemanticCOLORS | undefined;
+                                return (
+                                    <Segment key={id} color={color}>
+                                        <Form.Group grouped>
+                                            <Form.Field>
+                                                <label>
+                                                    Question {i + 1}: {question}
+                                                </label>
+                                            </Form.Field>
+                                            {options.map((option) => {
+                                                const labelStyles: CSSProperties = {};
+                                                return (
+                                                    <Form.Field key={option} required>
+                                                        <Form.Radio
+                                                            label={<label style={labelStyles}>{option}</label>}
+                                                            checked={answer === option}
+                                                            value={option}
+                                                            onChange={() => handleAnswerSelect(i, option)}
+                                                        />
+                                                    </Form.Field>
+                                                );
+                                            })}
+                                        </Form.Group>
+                                    </Segment>
+                                );
+                            })}
+                            <Form.Group widths="equal">
+                                <Form.Button content="Reset" fluid type="button" color="grey" basic icon="refresh" onClick={handleReset} />
+                                <Form.Button content="Submit" fluid type="submit" color="blue" icon="save" />
+                            </Form.Group>
+                        </Form>
                     )}
                 </Grid.Column>
             </Grid>
