@@ -1,8 +1,8 @@
 import { Button, Form, Grid, Header, Message, Segment, SemanticCOLORS } from "semantic-ui-react";
 import { CSSProperties, useEffect, useState } from "react";
+import { ExamQuestion, specialExamIds } from "../types";
 
 import Exam from "../components/Exam";
-import { ExamQuestion } from "../types";
 import { GetStaticProps } from "next";
 import Layout from "../components/Layout";
 import SimpleLoader from "../components/SimpleLoader";
@@ -91,6 +91,20 @@ const Home: React.FC<HomeProps> = ({ examIds }) => {
                             ))}
                         </Form.Field>
                     </Form>
+
+                    {["Random 10 From All Exams", "Random 20 From All Exams"].includes(selectedExamId) && (
+                        <>
+                            <br />
+                            <Button
+                                type="button"
+                                icon="shuffle"
+                                content="Fetch another random set"
+                                size="small"
+                                color="grey"
+                                onClick={() => fetchExamQuestions(selectedExamId)}
+                            />
+                        </>
+                    )}
                 </Grid.Column>
                 <Grid.Column>
                     {!!incorrectAnswers && (
@@ -153,7 +167,7 @@ export const getStaticProps: GetStaticProps<HomeProps> = async () => {
     const examIds = await getExamOptions();
     return {
         props: {
-            examIds
+            examIds: [...specialExamIds, ...examIds]
         }
     };
 };
